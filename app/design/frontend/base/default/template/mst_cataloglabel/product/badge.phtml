@@ -1,0 +1,28 @@
+<?php
+$_displays = $this->getDisplays();
+$this->setLabelObjectsArray($_displays);
+
+?>
+<?php foreach ($_displays as $_display): ?>
+        <?php if($this->isProductView() && $_display->getViewUrl()): ?>
+            <a href="<?php echo $_display->getViewUrl() ?>">
+                <div id="<?php echo $this->getProductId().$_display->getPosition()?>" class="cataloglabel cataloglabel-product-top-label cataloglabel-<?php echo $this->getPlaceholderCode() ?> position-<?php echo $_display->getPosition() ?>" title="<?php echo $_display->getTitle() ?>" style="background:url('<?php echo $_display->getImageUrl() ?>'); background-repeat: no-repeat; <?php echo $this->getImageSizeHtml($_display->getImage(), $_display->getPosition(), $this->getLabelPositionCount($_display)) ?>">
+                <span><?php echo $_display->getTitle() ?></span>
+                </div>
+            </a>
+        <?php elseif($this->isProductView() && !$_display->getViewUrl()): ?>
+            <div id="<?php echo $this->getProductId().$_display->getPosition()?>" class="cataloglabel cataloglabel-product-top-label cataloglabel-<?php echo $this->getPlaceholderCode() ?> position-<?php echo $_display->getPosition() ?>" title="<?php echo $_display->getTitle() ?>" style="background:url('<?php echo $_display->getImageUrl() ?>'); background-repeat: no-repeat; <?php echo $this->getImageSizeHtml($_display->getImage(), $_display->getPosition(), $this->getLabelPositionCount($_display)) ?>">
+            <span><?php echo $_display->getTitle() ?></span>
+            </div>
+
+        <?php elseif ($this->isProductList() && $_display->getListUrl()): ?>
+            <div id="<?php echo $this->getProductId().$_display->getPosition()?>" class="cataloglabel cataloglabel-product-top-label cataloglabel-<?php echo $this->getPlaceholderCode() ?> position-<?php echo $_display->getPosition() ?>" title="<?php echo $_display->getTitle() ?>" style="background:url('<?php echo $_display->getImageUrl() ?>'); background-repeat: no-repeat; <?php echo $this->getImageSizeHtml($_display->getImage(), $_display->getPosition(), $this->getLabelPositionCount($_display)) ?>" mlabelcustomdata = "<?php echo $_display->getListUrl() ?>" onmouseover = 'mLabelEnterCustomFunction(this, this.parentNode)' onmouseout  = 'mLabelOutCustomFunction(this, this.parentNode)'>
+            <span><?php echo $_display->getTitle() ?></span>
+            </div>
+        <?php elseif($this->isProductList() && !$_display->getListUrl()): ?>
+            <div id="<?php echo $this->getProductId().$_display->getPosition()?>" class="cataloglabel cataloglabel-product-top-label cataloglabel-<?php echo $this->getPlaceholderCode() ?> position-<?php echo $_display->getPosition() ?>" title="<?php echo $_display->getTitle() ?>" style="background:url('<?php echo $_display->getImageUrl() ?>'); background-repeat: no-repeat; <?php echo $this->getImageSizeHtml($_display->getImage(), $_display->getPosition(), $this->getLabelPositionCount($_display)) ?>">
+            <span><?php echo $_display->getTitle() ?></span>
+            </div>
+        <?php endif ?>
+    <?php $this->setLabelPositionCount($_display); ?>
+<?php endforeach ?>

@@ -1,0 +1,36 @@
+.labelposition {
+    width: 70px;
+    height: 70px;
+    border: 1px solid #ddd;
+}
+.labelposition-item {
+    border: 1px solid #ddd;
+    background: #fefefe;
+    width: 20px;
+    height: 20px;
+    float: left;
+    margin-left: 1px;
+    margin-top: 1px;
+    cursor: pointer;
+}
+
+.labelposition-item:hover {
+    background: #ddd;
+}
+
+.labelposition-item.active {
+    background: #ff9600;
+}
+
+.cataloglabel-gallery-edit-placeholder {
+    width: 100%;
+    line-height: 20px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.1);
+    margin-bottom: 5px;
+    cursor: pointer;
+}
+
+.cataloglabel-gallery-edit-placeholder:hover {
+    background: rgba(0, 0, 0, 0.2);
+}

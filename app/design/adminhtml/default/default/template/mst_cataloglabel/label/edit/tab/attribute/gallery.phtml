@@ -1,0 +1,159 @@
+<div class="fieldset">
+<div class="grid">
+    <div class="hor-scroll">
+        <table cellspacing="0" class="data border" width="100%">
+            <thead>
+                <tr class="headings">
+                    <th><?php echo Mage::helper('cataloglabel')->__('Option') ?></th>
+                    <?php foreach ($this->getImageType() as $_type => $_title): ?>
+                        <th width="130px"><?php echo Mage::helper('cataloglabel')->__($_title) ?></th>
+                        <th><?php echo Mage::helper('cataloglabel')->__('Title') ?></th>
+                        <th><?php echo Mage::helper('cataloglabel')->__('Description / URL') ?></th>
+                    <?php endforeach ?>
+                    <th></th>
+                </tr>
+            </thead>
+            <tfoot>
+                <tr>
+                    <td colspan="<?php echo count($this->getImageType()) * 3 + 2 ?>" class="a-right"><?php echo $this->getAddButtonHtml()?>&nbsp;<?php echo $this->getUploadButtonHtml() ?></td>
+                </tr>
+            </tfoot>
+            <tbody id="link_items_body">
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+<script type="text/javascript">
+//<![CDATA[
+var maxUploadFileSizeInBytes = 134217728;
+var maxUploadFileSize = '128M';
+
+var linkTemplate = '<tr>' +
+    '<td>' +
+        '<input type="hidden" name="attribute[{{id}}][option_id]" value="{{id}}" />' +
+        '{{label}}' +
+        '<input type="text" class="__option_text__ input-text" name="attribute[{{id}}][option_text]" value="{{option_text}}" />' +
+    '</td>';
+    <?php foreach ($this->getImageType() as $_type => $_title): ?>
+    linkTemplate += '<td id="gallery_cell_{{id}}_<?php echo $_type ?>">' +
+        '<div class="cataloglabel-gallery-edit-placeholder" onclick="linkItems.edit(this, \'{{id}}_<?php echo $_type ?>\');">edit</div>' +
+        '<div class="files">' +
+            '<div class="row">' +
+                '<input type="hidden" class="__delete__" name="attribute[{{id}}][display][<?php echo $_type ?>_is_delete]" value="" />' +
+                '<input type="hidden" id="attribute_{{id}}_<?php echo $_type ?>_file_save" name="attribute[{{id}}][display][<?php echo $_type ?>_file]" value="{{file_save}}" />' +
+                '<div id="attribute_{{id}}_<?php echo $_type ?>_file">' +
+                    '<div id="attribute_{{id}}_<?php echo $_type ?>_file-old" class="file-row-info"></div>' +
+                    '<div id="attribute_{{id}}_<?php echo $_type ?>_file-new" class="file-row-info"></div>' +
+                    '<div class="clear"></div>' +
+                '</div>'+
+            '</div>'+
+            '<div>'+
+                '<span id="attribute_{{id}}_<?php echo $_type ?>_sample_container"></span>'+
+            '</div>'+
+        '</div>'+
+    '</td>'+
+    '<td>' +
+        '<input type="text" class="input-text" name="attribute[{{id}}][display][<?php echo $_type ?>_title]" value="{{<?php echo $_type ?>_title}}">' +
+    '</td>' +
+    '<td>' +
+        '<input type="text" class="input-text" name="attribute[{{id}}][display][<?php echo $_type ?>_description]" value="{{<?php echo $_type ?>_description}}"><br><br>' +
+        '<input type="text" class="input-text" name="attribute[{{id}}][display][<?php echo $_type ?>_url]" value="{{<?php echo $_type ?>_url}}">' +
+    '</td>';
+    <?php endforeach ?>
+    linkTemplate += '<td>' +
+        '<button type="button" class="scalable delete icon-btn delete-link-item"><span>Delete</span></button>' +
+    '</td>' +
+'</tr>';
+
+var linkItems = {
+    tbody          : $('link_items_body'),
+    templateSyntax : /(^|.|\r|\n)({{(\w+)}})/,
+    templateText   : linkTemplate,
+    itemCount      : 1,
+    uploader : {},
+
+    add : function(data)
+    {
+        alertAlreadyDisplayed = false;
+        this.template = new Template(this.templateText, this.templateSyntax);
+
+        if (data.value == undefined) {
+            data.value = this.itemCount;
+        }
+
+        data.id = data.value;
+
+        var row = this.template.evaluate(data);
+        Element.insert(this.tbody, {'bottom' : row});
+
+        if (data.label) {
+            Element.select(this.tbody, '.__option_text__').each(function(elm){
+                elm.remove();
+            });
+        }
+
+        <?php foreach ($this->getImageType() as $_type => $_title): ?>
+        if (!data.<?php echo $_type ?>_file_save) {
+            data.<?php echo $_type ?>_file_save = {};
+        }
+        var id = data.id + '_<?php echo $_type ?>';
+        var fileUploader = new CatalogLabel.Label.FileUploader(
+            'gallery_cell_' + id,
+            'attribute[' + id + ']',
+            [data.<?php echo $_type ?>_file_save],
+            'attribute_' + id + '_file',
+            <?php echo $this->getConfigJson() ?>,
+            '<?php echo Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB) ?>'
+        );
+        this.uploader[id] = fileUploader;
+        <?php endforeach ?>
+
+        this.itemCount++;
+        this.bindRemoveButtons();
+    },
+
+    remove : function(event)
+    {
+        var element = $(Event.findElement(event, 'tr'));
+        alertAlreadyDisplayed = false;
+        if(element){
+            element.down('input[type="hidden"].__delete__').value = '1';
+            Element.select(element, 'div.flex').each(function(elm){
+                elm.remove();
+            });
+            element.addClassName('no-display');
+            element.addClassName('ignore-validate');
+            element.hide();
+        }
+    },
+
+    bindRemoveButtons : function()
+    {
+        var buttons = $$('tbody#link_items_body .delete-link-item');
+        for(var i = 0; i < buttons.length; i++){
+            if(!$(buttons[i]).binded) {
+                $(buttons[i]).binded = true;
+                Event.observe(buttons[i], 'click', this.remove.bind(this));
+            }
+        }
+    },
+
+    edit: function(item, id)
+    {
+        var fileuploader = this.uploader[id];
+        fileuploader.initUploader();
+        item.hide();
+    }
+}
+
+linkItems.bindRemoveButtons();
+
+if($('add_link_item')) {
+    Event.observe('add_link_item', 'click', linkItems.add.bind(linkItems));
+}
+
+<?php foreach ($this->getAttibuteOptions() as $item): ?>
+    linkItems.add(<?php echo json_encode($item) ?>);
+<?php endforeach ?>
+</script>

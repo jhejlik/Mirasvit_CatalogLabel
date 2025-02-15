@@ -1,0 +1,16 @@
+<?php
+$_displays = $this->getDisplays();
+?>
+<div class="cataloglabel cataloglabel-product-list cataloglabel-<?php echo $this->getPlaceholderCode() ?>">
+<?php foreach ($_displays as $_display): ?>
+    <?php if ($_display->getImage()): ?>
+        <?php if ($_display->getUrl()): ?>
+        <a href="<?php echo $_display->getUrl() ?>">
+        <?php endif ?>
+        <img src="<?php echo $this->helper('mstcore/image')->init($_display, 'list_image', 'cataloglabel')->resize($this->getWidth(), $this->getHeight()) ?>" data-toggle="tooltip" data-original-title="<?php echo $_display->getTitle() ?>" data-original-description="<?php echo $_display->getDescription() ?>">
+        <?php if ($_display->getUrl()): ?>
+        </a>
+        <?php endif ?>
+    <?php endif ?>
+<?php endforeach ?>
+</div>

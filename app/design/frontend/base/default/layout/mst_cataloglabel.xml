@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<layout version="0.1.0">
+    <default>
+        <reference name="head">
+            <action method="addCss"><stylesheet>css/mst/cataloglabel/cataloglabel.css</stylesheet></action>
+            <action method="addJs"><script>mirasvit/core/jquery.min.js</script></action>
+            <!-- <action method="addJs"><script>mirasvit/core/bootstrap-tooltip.js</script></action>
+            <action method="addJs"><script>mirasvit/code/cataloglabel/cataloglabel.js</script></action> -->
+            <action method="addJs"><script>mirasvit/code/cataloglabel/cataloglabel_url.js</script></action>
+        </reference>
+    </default>
+</layout>

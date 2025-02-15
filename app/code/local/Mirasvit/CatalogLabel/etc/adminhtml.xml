@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<config>
+    <menu>
+        <catalog>
+            <children>
+                <cataloglabel module="cataloglabel">
+                    <title>Manage Catalog Labels</title>
+                    <sort_order>25</sort_order>
+                    <action>adminhtml/cataloglabel_label/index</action>
+                    <children>
+                        <cataloglabel_labels module="cataloglabel">
+                            <title>Manage Labels</title>
+                            <sort_order>10</sort_order>
+                            <action>adminhtml/cataloglabel_label/index</action>
+                        </cataloglabel_labels>
+                        <cataloglabel_placeholders module="cataloglabel">
+                            <title>Manage Placeholders</title>
+                            <sort_order>20</sort_order>
+                            <action>adminhtml/cataloglabel_placeholder/index</action>
+                        </cataloglabel_placeholders>
+                    </children>
+                </cataloglabel>
+            </children>
+        </catalog>
+    </menu>
+    <acl>
+        <resources>
+            <all>
+                <title>Allow Everything</title>
+            </all>
+            <admin>
+                <children>
+                    <catalog>
+                        <children>
+                            <cataloglabel>
+                                <title>Manage Catalog Labels</title>
+                                <sort_order>10</sort_order>
+                                <children>
+                                    <cataloglabel_labels>
+                                        <title>Manage Labels</title>
+                                        <sort_order>10</sort_order>
+                                    </cataloglabel_labels>
+                                    <cataloglabel_placeholders>
+                                        <title>Manage Placeholders</title>
+                                        <sort_order>20</sort_order>
+                                    </cataloglabel_placeholders>
+                                </children>
+                            </cataloglabel>
+                        </children>
+                    </catalog>
+                    <system>
+                        <children>
+                            <config>
+                                <cataloglabel>
+                                    <action translate="title" module="cataloglabel">
+                                        <title>Catalog Labels</title>
+                                    </action>
+                                </cataloglabel>
+                            </config>
+                        </children>
+                    </system>
+                </children>
+            </admin>
+        </resources>
+    </acl>
+</config>

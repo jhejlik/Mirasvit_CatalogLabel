@@ -1,0 +1,8 @@
+<config>
+    <modules>
+        <Mirasvit_CatalogLabel>
+            <active>true</active>
+            <codePool>local</codePool>
+        </Mirasvit_CatalogLabel>
+    </modules>
+</config>
