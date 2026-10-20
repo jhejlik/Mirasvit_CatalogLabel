@@ -18,7 +18,7 @@ class Mirasvit_CatalogLabel_Model_Config
 {
     /**
      * Allowed label image extensions => matching IMAGETYPE_* constants (getimagesize).
-     * webp: add 'webp' => IMAGETYPE_WEBP (PHP 7.1+), svg needs separate validation.
+     * svg needs separate validation (not an image for getimagesize).
      */
     protected $_allowedImageTypes = array(
         'jpg'  => IMAGETYPE_JPEG,

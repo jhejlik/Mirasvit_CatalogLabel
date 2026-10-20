@@ -60,7 +60,8 @@ class Mirasvit_CatalogLabel_Model_Label extends Mage_Core_Model_Abstract
                 $labelAttributes = Mage::getModel('cataloglabel/label_attribute')->getCollection()
                     ->addFieldToFilter('label_id', $this->getId());
                 foreach ($labelAttributes as $labelAttribute) {
-                    if (strpos($option, $labelAttribute->getOptionText()) !== false) {
+                    $optionText = (string) $labelAttribute->getOptionText();
+                    if ($optionText !== '' && strpos((string) $option, $optionText) !== false) {
                         $result[] = $labelAttribute->getDisplay();
                     }
                 }

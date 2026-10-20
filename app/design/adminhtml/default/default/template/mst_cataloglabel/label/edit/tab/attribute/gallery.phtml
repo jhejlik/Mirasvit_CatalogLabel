@@ -73,6 +73,7 @@ var linkItems = {
         if (data.value == undefined) {
             data.value = this.itemCount;
         }
+        this.itemCount = Math.max(this.itemCount, parseInt(data.value, 10) || 0);
 
         data.id = data.value;
 

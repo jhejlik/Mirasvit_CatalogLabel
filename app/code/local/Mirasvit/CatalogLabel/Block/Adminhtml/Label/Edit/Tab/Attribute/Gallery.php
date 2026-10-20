@@ -48,30 +48,40 @@ class Mirasvit_CatalogLabel_Block_Adminhtml_Label_Edit_Tab_Attribute_Gallery ext
 
             foreach ($options as $key => $option) {
                 $attr = Mage::getModel('cataloglabel/label_attribute')->loadByKey($this->_getModel()->getId(), $option['value']);
-
-                foreach ($this->getImageType() as $type => $label) {
-                    $options[$key][$type.'_title']       = $attr->getDisplay()->getTitle($type);
-                    $options[$key][$type.'_description'] = $attr->getDisplay()->getDescription($type);
-                    $options[$key][$type.'_url']         = $attr->getDisplay()->getUrl($type);
-                    $options[$key][$type.'_file_save'] = array(
-                        'url'  => $attr->getDisplay()->getImageUrl($type),
-                        'file' => $attr->getDisplay()->getImage($type),
-                    );
-                }
+                $options[$key] = array_merge($option, $this->_getDisplayData($attr));
             }
         } else {
+            // text attribute: rows are stored label attributes, option_id is the row key
             $attributes = Mage::getModel('cataloglabel/label_attribute')->getCollection()
-                ->addFieldToFilter('label_id', $this->_getModel()->getId());
-            foreach ($attributes as $key => $attr) {
-                $options[$key] = $attr->getData();
-                $options[$key]['file_save'] = array(
-                    'url'  => $attr->getImageUrl(),
-                    'file' => $attr->getImage()
-                );
+                ->addFieldToFilter('label_id', $this->_getModel()->getId())
+                ->setOrder('option_id', 'ASC');
+            foreach ($attributes as $attr) {
+                $options[] = array_merge(array(
+                    'value'       => $attr->getOptionId(),
+                    'option_text' => $attr->getOptionText(),
+                ), $this->_getDisplayData($attr));
             }
         }
 
         return $options;
+    }
+
+    protected function _getDisplayData($attr)
+    {
+        $data    = array();
+        $display = $attr->getDisplay();
+
+        foreach ($this->getImageType() as $type => $label) {
+            $data[$type.'_title']       = $display->getTitle($type);
+            $data[$type.'_description'] = $display->getDescription($type);
+            $data[$type.'_url']         = $display->getUrl($type);
+            $data[$type.'_file_save']   = array(
+                'url'  => $display->getImageUrl($type),
+                'file' => $display->getImage($type),
+            );
+        }
+
+        return $data;
     }
 
     public function getImageType()

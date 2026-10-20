@@ -97,6 +97,18 @@ class Mirasvit_CatalogLabel_Model_Resource_Label extends Mage_Core_Model_Mysql4_
             foreach ($object->getData('attribute') as $item) {
 
                 $model = Mage::getModel('cataloglabel/label_attribute')->loadByKey($object->getId(), $item['option_id']);
+
+                // row removed in gallery grid
+                if (!empty($item['display']['view_is_delete'])) {
+                    if ($model->getId()) {
+                        if ($model->getDisplayId()) {
+                            $model->getDisplay()->delete();
+                        }
+                        $model->delete();
+                    }
+                    continue;
+                }
+
                 $model->setLabelId($object->getId())
                     ->addData($item)
                     ->save();

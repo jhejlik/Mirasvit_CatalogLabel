@@ -36,7 +36,8 @@ class Mirasvit_CatalogLabel_Model_Resource_Label_Display extends Mage_Core_Model
             if(isset($_FILES[$code]['name']) && $_FILES[$code]['name']) {
                 try {
                     $uploader = new Varien_File_Uploader($code);
-                    $uploader->setAllowedExtensions(null)
+                    $uploader->addValidateCallback('cataloglabel_image', Mage::helper('cataloglabel'), 'validateImage');
+                    $uploader->setAllowedExtensions(Mage::getSingleton('cataloglabel/config')->getAllowedImageExtensions())
                         ->setAllowCreateFolders(true)
                         ->setAllowRenameFiles(true)
                         ->setFilesDispersion(true);
@@ -44,7 +45,7 @@ class Mirasvit_CatalogLabel_Model_Resource_Label_Display extends Mage_Core_Model
                     $result = $uploader->save(Mage::getSingleton('cataloglabel/config')->getBaseMediaPath());
                     $object->setData($image['value'].'_image', $result['file']);
                 } catch (Exception $e) {
-                    Mage::throwException($e);
+                    Mage::throwException($e->getMessage());
                 }
             }
 
