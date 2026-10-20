@@ -39,6 +39,24 @@ class Mirasvit_CatalogLabel_Helper_Data extends Mage_Core_Helper_Abstract
         return $this->getProductHtml($placeholderCode, $product, 'view', 'view', $width, $height);
     }
 
+    /**
+     * Validate callback for Varien_File_Uploader::addValidateCallback()
+     *
+     * @param string $filePath uploaded tmp file
+     * @throws Mage_Core_Exception
+     */
+    public function validateImage($filePath)
+    {
+        $info = @getimagesize($filePath);
+        $allowedTypes = Mage::getSingleton('cataloglabel/config')->getAllowedImageTypes();
+
+        if (!$info || !in_array($info[2], $allowedTypes, true)) {
+            Mage::throwException($this->__('File is not a valid image.'));
+        }
+
+        return true;
+    }
+
     public function getFullActionCode()
     {
         $request = Mage::app()->getRequest();

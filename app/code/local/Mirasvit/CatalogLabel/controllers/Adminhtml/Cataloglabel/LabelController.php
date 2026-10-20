@@ -249,29 +249,34 @@ class Mirasvit_CatalogLabel_Adminhtml_Cataloglabel_LabelController extends Mage_
 
     public function uploadAction()
     {
-        $path = Mage::getSingleton('cataloglabel/config')->getBaseMediaPath().DS;
-
+        $config = Mage::getSingleton('cataloglabel/config');
         $result = array();
 
         try {
+            if (!$this->getRequest()->isPost() || !$this->_validateFormKey()) {
+                Mage::throwException(Mage::helper('cataloglabel')->__('Invalid request.'));
+            }
+
             $uploader = new Mage_Core_Model_File_Uploader('file');
+            $uploader->setAllowedExtensions($config->getAllowedImageExtensions());
+            $uploader->addValidateCallback('cataloglabel_image', Mage::helper('cataloglabel'), 'validateImage');
             $uploader->setAllowRenameFiles(true);
             $uploader->setFilesDispersion(true);
-            $result = $uploader->save($path);
+            $saved = $uploader->save($config->getBaseMediaPath().DS);
 
-            $result['url'] = Mage::getSingleton('cataloglabel/config')->getBaseMediaUrl().$result['file'];
-            $result['cookie'] = array(
-                'name'     => session_name(),
-                'value'    => $this->_getSession()->getSessionId(),
-                'lifetime' => $this->_getSession()->getCookieLifetime(),
-                'path'     => $this->_getSession()->getCookiePath(),
-                'domain'   => $this->_getSession()->getCookieDomain()
+            $result = array(
+                'file' => $saved['file'],
+                'name' => $saved['name'],
+                'size' => $saved['size'],
+                'url'  => $config->getBaseMediaUrl().$saved['file'],
             );
         } catch (Exception $e) {
             $result = array('error' => $e->getMessage(), 'errorcode' => $e->getCode());
         }
 
-        $this->getResponse()->setBody(Mage::helper('core')->jsonEncode($result));
+        $this->getResponse()
+            ->setHeader('Content-Type', 'application/json', true)
+            ->setBody(Mage::helper('core')->jsonEncode($result));
     }
 
     public function newConditionHtmlAction()
