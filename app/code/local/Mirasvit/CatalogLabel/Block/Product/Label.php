@@ -57,6 +57,7 @@ class Mirasvit_CatalogLabel_Block_Product_Label extends Mage_Core_Block_Template
 
         foreach ($displays as $display) {
             if ($image = $display->getImage()) {
+                $w = $h = null;
                 if (file_exists(Mage::getSingleton('cataloglabel/config')->getBaseMediaPath().$image)) {
                     list($w, $h) = getimagesize(Mage::getSingleton('cataloglabel/config')->getBaseMediaPath().$image);
                 }
@@ -129,11 +130,18 @@ class Mirasvit_CatalogLabel_Block_Product_Label extends Mage_Core_Block_Template
             $this->_prepareDisplay($display);
         }
 
+        // templates (e.g. theme overrides) may not call setLabelObjectsArray() themselves
+        $this->setLabelObjectsArray($result);
+
         return $result;
     }
 
     public function getImageSizeHtml($image, $position, $positionCount = false)
     {
+        if (!isset($this->_labelObjectsArray[$position])) {
+            return '';
+        }
+
         $currentPositionObject      = $this->_labelObjectsArray[$position];
         $currentPositionObjectArray = $currentPositionObject->toArray();
         $currentLabelObject         = $currentPositionObject->getData($positionCount);

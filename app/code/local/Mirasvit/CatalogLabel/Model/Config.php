@@ -44,7 +44,7 @@ class Mirasvit_CatalogLabel_Model_Config
 
     public function getBaseMediaUrl()
     {
-        return Mage::getBaseUrl('media').DS.'cataloglabel';
+        return Mage::getBaseUrl('media').'cataloglabel';
     }
 
     public function getBaseTmpMediaPath()
@@ -54,6 +54,6 @@ class Mirasvit_CatalogLabel_Model_Config
 
     public function getBaseTmpMediaUrl()
     {
-        return Mage::getBaseUrl('media').DS.'cataloglabel';
+        return Mage::getBaseUrl('media').'cataloglabel';
     }
 }
