@@ -22,27 +22,6 @@ class Mirasvit_CatalogLabel_Block_Adminhtml_Label_Edit_Tab_Attribute_Gallery ext
         $this->setTemplate('mst_cataloglabel/label/edit/tab/attribute/gallery.phtml');
     }
 
-    protected function _prepareLayout()
-    {
-        $this->setChild(
-            'upload_button',
-            $this->getLayout()->createBlock('adminhtml/widget_button')
-                ->addData(array(
-                    'id'      => '',
-                    'label'   => Mage::helper('cataloglabel')->__('Upload Files'),
-                    'type'    => 'button',
-                    'onclick' => 'CatalogLabel.Label.massUpload();'
-                ))
-        );
-
-        return parent::_prepareLayout();
-    }
-
-    public function getUploadButtonHtml()
-    {
-        return $this->getChild('upload_button')->toHtml();
-    }
-
     public function getAddButtonHtml()
     {
         $input = $this->_getAttribute()->getData('frontend_input');
@@ -122,27 +101,61 @@ class Mirasvit_CatalogLabel_Block_Adminhtml_Label_Edit_Tab_Attribute_Gallery ext
 
     public function getConfigJson()
     {
-        $this->getConfig()->setUrl(Mage::getModel('adminhtml/url')->addSessionParam()->getUrl('*/cataloglabel_label/upload', array('_secure' => true)));
-        $this->getConfig()->setParams(array('form_key' => $this->getFormKey()));
-        $this->getConfig()->setFileField('file');
-        $this->getConfig()->setFilters(array(
-            'all'    => array(
-                'label' => Mage::helper('adminhtml')->__('All Files'),
-                'files' => array('*.*')
-            )
+        $helper     = Mage::helper('cataloglabel');
+        $extensions = Mage::getSingleton('cataloglabel/config')->getAllowedImageExtensions();
+        $maxSize    = $this->getMaxUploadSize();
+
+        return Mage::helper('core')->jsonEncode(array(
+            'url'               => $this->getUrl('*/cataloglabel_label/upload'),
+            'params'            => array('form_key' => $this->getFormKey()),
+            'fileField'         => 'file',
+            'allowedExtensions' => $extensions,
+            'maxFileSize'       => $maxSize,
+            'messages'          => array(
+                'invalidType' => $helper->__('Allowed file types: %s.', implode(', ', $extensions)),
+                'tooLarge'    => $helper->__('File is too large. Maximum size is %s MB.', round($maxSize / 1048576, 1)),
+                'failed'      => $helper->__('Upload failed.'),
+            ),
         ));
-        $this->getConfig()->setReplaceBrowseWithRemove(true);
-        $this->getConfig()->setWidth('32');
-        $this->getConfig()->setHideUploadButton(true);
-        return Mage::helper('core')->jsonEncode($this->getConfig()->getData());
     }
 
-    public function getConfig()
+    public function getAcceptAttribute()
     {
-        if(is_null($this->_config)) {
-            $this->_config = new Varien_Object();
+        $accept = array();
+        foreach (Mage::getSingleton('cataloglabel/config')->getAllowedImageExtensions() as $extension) {
+            $accept[] = '.'.$extension;
         }
 
-        return $this->_config;
+        return implode(',', $accept);
+    }
+
+    /**
+     * Max upload size in bytes by upload_max_filesize / post_max_size, 0 = unlimited
+     */
+    public function getMaxUploadSize()
+    {
+        $sizes = array_filter(array(
+            $this->_iniSizeToBytes(ini_get('upload_max_filesize')),
+            $this->_iniSizeToBytes(ini_get('post_max_size')),
+        ));
+
+        return $sizes ? min($sizes) : 0;
+    }
+
+    protected function _iniSizeToBytes($value)
+    {
+        $value = trim($value);
+        $bytes = (int) $value;
+
+        switch (strtolower(substr($value, -1))) {
+            case 'g':
+                $bytes *= 1024;
+            case 'm':
+                $bytes *= 1024;
+            case 'k':
+                $bytes *= 1024;
+        }
+
+        return $bytes;
     }
 }

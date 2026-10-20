@@ -22,15 +22,82 @@
     background: #ff9600;
 }
 
-.cataloglabel-gallery-edit-placeholder {
-    width: 100%;
-    line-height: 20px;
-    text-align: center;
-    background: rgba(0, 0, 0, 0.1);
+.cataloglabel-gallery-cell {
+    position: relative;
+}
+
+.cataloglabel-gallery-cell.drag-over {
+    outline: 2px dashed #eb5e00;
+    outline-offset: -4px;
+    background: #fff6ee;
+}
+
+.cataloglabel-gallery-cell.uploading .cataloglabel-gallery-preview {
+    opacity: 0.4;
+}
+
+.cataloglabel-gallery-input {
+    display: none;
+}
+
+.cataloglabel-gallery-actions {
+    display: flex;
     margin-bottom: 5px;
+}
+
+.cataloglabel-gallery-actions button {
+    border: 0;
+    line-height: 20px;
+    padding: 0 6px;
+    background: rgba(0, 0, 0, 0.1);
+    font: inherit;
     cursor: pointer;
 }
 
-.cataloglabel-gallery-edit-placeholder:hover {
+.cataloglabel-gallery-actions button:hover {
     background: rgba(0, 0, 0, 0.2);
+}
+
+.cataloglabel-gallery-upload {
+    flex: 1;
+}
+
+.cataloglabel-gallery-remove {
+    margin-left: 1px;
+}
+
+.cataloglabel-gallery-cell:not(.has-image) .cataloglabel-gallery-remove {
+    display: none;
+}
+
+.cataloglabel-gallery-preview {
+    cursor: pointer;
+    text-align: center;
+}
+
+.cataloglabel-gallery-preview img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
+
+.cataloglabel-gallery-cell:not(.has-image) .cataloglabel-gallery-preview {
+    border: 1px dashed #ccc;
+    line-height: 60px;
+    color: #999;
+}
+
+.cataloglabel-gallery-cell:not(.has-image) .cataloglabel-gallery-preview:before {
+    content: attr(data-empty);
+}
+
+.cataloglabel-gallery-status {
+    margin-top: 3px;
+    text-align: center;
+    font-size: 11px;
+}
+
+.cataloglabel-gallery-status.error {
+    color: #df280a;
 }

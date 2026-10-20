@@ -1,206 +1,202 @@
 var CatalogLabel = {};
 
-CatalogLabel.Label = {
-    uploaderObj : $H({}),
-    objCount : 0,
+CatalogLabel.Label = {};
 
-    setUploaderObj : function(key, obj){
-        this.uploaderObj.set(key, obj);
-    },
-
-    getUploaderObj : function(key){
-        try {
-            return this.uploaderObj.get(key);
-        } catch (e) {
-            try {
-                console.log(e);
-            } catch (e2) {
-                alert(e.name + '\n' + e.message);
-            }
-        }
-    },
-
-    unsetUploaderObj : function(key){
-        try {
-            this.uploaderObj.unset(key);
-        } catch (e) {
-            try {
-                console.log(e);
-            } catch (e2) {
-                alert(e.name + '\n' + e.message);
-            }
-        }
-    },
-
-    massUpload : function(){
-        try {
-            this.uploaderObj.each(function(item){
-                container = item.value.container.up('tr');
-                if (container.visible() && !container.hasClassName('no-display')) {
-                    item.value.upload();
-                } else {
-                    Downloadable.unsetUploaderObj(item.key);
-                }
-            });
-        } catch (e) {
-            try {
-                console.log(e);
-            } catch (e2) {
-                alert(e.name + '\n' + e.message);
-            }
-        }
-    }
-};
-
+/**
+ * Instant HTML5 (XHR + FormData) image upload for one gallery cell.
+ *
+ * Elements are found by idName prefix:
+ *   {idName}_save    - hidden input with JSON [{file, url}], processed on label save
+ *   {idName}_input   - file input without name (never submitted with the form)
+ *   {idName}_preview - image preview, click opens file dialog
+ *   {idName}_status  - progress / error message
+ */
 CatalogLabel.Label.FileUploader = Class.create();
 CatalogLabel.Label.FileUploader.prototype = {
-    key           : null,
-    elmContainer  : null,
-    fileValueName : null,
-    fileValue     : null,
-    idName        : null,
-    baseUrl       : null,
-    uploaderText  : '<div class="no-display" id="[[idName]]-template">' +
-                            '<div id="{{id}}" class="file-row file-row-narrow">' +
-                                '<span class="file-info">' +
-                                    '<span class="file-info-name">{{name}}</span>' +
-                                    ' ' +
-                                    '<span class="file-info-size">({{size}})</span>' +
-                                '</span>' +
-                                '<span class="progress-text"></span>' +
-                                '<div class="clear"></div>' +
-                            '</div>' +
-                        '</div>' +
-                            '<div class="no-display" id="[[idName]]-template-progress">' +
-                            '{{percent}}% {{uploaded}} / {{total}}' +
-                            '</div>',
-    uploaderSyntax : /(^|.|\r|\n)(\[\[(\w+)\]\])/,
-    uploaderObj    : $H({}),
-    config         : null,
-    fileList       : null,
+    config    : null,
+    cell      : null,
+    input     : null,
+    saveInput : null,
+    preview   : null,
+    status    : null,
+    xhr       : null,
 
-    initialize: function (elmContainer, fileValueName, fileValue, idName, config, baseUrl) {
-        this.key           = elmContainer;
-        this.elmContainer  = elmContainer;
-        this.fileValueName = fileValueName;
-        this.fileValue     = fileValue;
-        this.idName        = idName;
-        this.config        = config;
-        this.baseUrl       = baseUrl;
+    initialize: function (cellId, idName, file, config)
+    {
+        this.config    = config;
+        this.cell      = $(cellId);
+        this.input     = $(idName + '_input');
+        this.saveInput = $(idName + '_save');
+        this.preview   = $(idName + '_preview');
+        this.status    = $(idName + '_status');
 
-        uploaderTemplate   = new Template(this.uploaderText, this.uploaderSyntax);
+        this.setFile(file && file.file ? file : null);
 
-        Element.insert(elmContainer, {
-            'top' : uploaderTemplate.evaluate({
-                    'idName'        : this.idName,
-                    'fileValueName' : this.fileValueName,
-                    'uploaderObj'   : 'CatalogLabel.Label.getUploaderObj(\'' + this.key + '\')'
-                })
-            }
-        );
+        this.cell.select('.cataloglabel-gallery-upload').invoke('observe', 'click', this.browse.bind(this));
+        this.cell.select('.cataloglabel-gallery-remove').invoke('observe', 'click', this.remove.bind(this));
+        this.preview.observe('click', this.browse.bind(this));
+        this.input.observe('change', this.handleSelect.bind(this));
 
-        if ($(this.idName + '_save')) {
-            $(this.idName + '_save').value = this.fileValue.toJSON ? this.fileValue.toJSON() : Object.toJSON(this.fileValue);
+        this.cell.observe('dragover', this.handleDragOver.bind(this));
+        this.cell.observe('dragleave', this.handleDragLeave.bind(this));
+        this.cell.observe('drop', this.handleDrop.bind(this));
+    },
+
+    browse: function ()
+    {
+        this.input.click();
+    },
+
+    remove: function ()
+    {
+        if (this.xhr) {
+            this.xhr.abort();
+        }
+        this.setFile(null);
+    },
+
+    handleSelect: function ()
+    {
+        if (this.input.files && this.input.files.length) {
+            this.upload(this.input.files[0]);
+        }
+        this.input.value = '';
+    },
+
+    handleDragOver: function (event)
+    {
+        Event.stop(event);
+        this.cell.addClassName('drag-over');
+    },
+
+    handleDragLeave: function (event)
+    {
+        if (event.relatedTarget && this.cell.contains(event.relatedTarget)) {
+            return;
+        }
+        this.cell.removeClassName('drag-over');
+    },
+
+    handleDrop: function (event)
+    {
+        Event.stop(event);
+        this.cell.removeClassName('drag-over');
+
+        var files = event.dataTransfer ? event.dataTransfer.files : null;
+        if (files && files.length) {
+            this.upload(files[0]);
+        }
+    },
+
+    validate: function (file)
+    {
+        var extension = file.name.split('.').pop().toLowerCase();
+
+        if (file.name.indexOf('.') == -1 || this.config.allowedExtensions.indexOf(extension) == -1) {
+            return this.config.messages.invalidType;
+        }
+        if (this.config.maxFileSize && file.size > this.config.maxFileSize) {
+            return this.config.messages.tooLarge;
         }
 
-        $(this.key).insert('');
-
-        this.fileList =  new CatalogLabel.Label.FileList(this.idName);
+        return null;
     },
 
-    initUploader: function()
+    upload: function (file)
     {
-        CatalogLabel.Label.setUploaderObj(
-            this.key,
-            new Flex.Uploader(this.idName, this.baseUrl + '/skin/adminhtml/default/default/media/cataloglabel/uploaderSingle.swf', this.config)
-        );
-
-        if (varienGlobalEvents) {
-            varienGlobalEvents.attachEventHandler('tabChangeBefore', CatalogLabel.Label.getUploaderObj(this.key).onContainerHideBefore);
+        var error = this.validate(file);
+        if (error) {
+            this.showError(error);
+            return;
         }
 
-        this.fileList.setUploaderObj(CatalogLabel.Label.getUploaderObj(this.key));
-    }
-}
+        if (this.xhr) {
+            this.xhr.abort();
+        }
 
-CatalogLabel.Label.FileList = Class.create();
-CatalogLabel.Label.FileList.prototype = {
-    file             : [],
-    containerId      : '',
-    container        : null,
-    uploader         : null,
-    fileListTemplate : '<span class="file-info">' +
-                            '<img src="{{url}}" width="100%"/>' +
-                        '</span>',
-    templatePattern  : /(^|.|\r|\n)({{(\w+)}})/,
-    listTemplate     : null,
+        var data = new FormData();
+        data.append(this.config.fileField, file);
+        $H(this.config.params).each(function (pair) {
+            data.append(pair.key, pair.value);
+        });
 
-    initialize: function (containerId)
-    {
-        this.containerId              = containerId,
-        this.container                = $(this.containerId);
-        this.file                     = this.getElement('save').value.evalJSON();
-        this.listTemplate             = new Template(this.fileListTemplate, this.templatePattern);
-        this.updateFiles();
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', this.config.url, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
 
-    },
-
-    setUploaderObj: function (uploader)
-    {
-        this.uploader                 = uploader;
-        this.uploader.onFilesComplete = this.handleUploadComplete.bind(this);
-        this.uploader.onFileRemoveAll = this.handleFileRemoveAll.bind(this);
-        this.uploader.onFileSelect    = this.handleFileSelect.bind(this);
-    },
-
-    handleFileRemoveAll: function(fileId)
-    {
-        $(this.containerId + '-new').hide();
-        $(this.containerId + '-old').show();
-    },
-
-    handleFileSelect: function()
-    {
-        $(this.containerId+'_type').checked = true;
-    },
-
-    getElement: function (name)
-    {
-        return $(this.containerId + '_' + name);
-    },
-
-    handleUploadComplete: function (files)
-    {
-        files.each(function(item) {
-           if (!item.response.isJSON()) {
-                try {
-                    console.log(item.response);
-                } catch (e2) {
-                    alert(item.response);
-                }
-               return;
-           }
-           var response = item.response.evalJSON();
-           if (response.error) {
-               return;
-           }
-           var newFile = response;
-           newFile.status = 'new';
-           this.file[0] = newFile;
-           this.uploader.removeFile(item.id);
-        }.bind(this));
-        this.updateFiles();
-    },
-
-    updateFiles: function() {
-        this.getElement('save').value = this.file.toJSON ? this.file.toJSON() : Object.toJSON(this.file);
-        this.file.each(function(row) {
-            if (this.uploader) {
-                row.size = this.uploader.formatSize(row.size);
+        xhr.upload.onprogress = function (event) {
+            if (event.lengthComputable) {
+                this.showStatus(Math.round(event.loaded / event.total * 100) + ' %');
             }
-            $(this.containerId + '-old').innerHTML = this.listTemplate.evaluate(row);
-            $(this.containerId + '-new').hide();
-            $(this.containerId + '-old').show();
-        }.bind(this));
+        }.bind(this);
+        xhr.onload = function () {
+            this.handleResponse(xhr);
+        }.bind(this);
+        xhr.onerror = function () {
+            this.finish(xhr);
+            this.showError(this.config.messages.failed);
+        }.bind(this);
+        xhr.onabort = function () {
+            this.finish(xhr);
+        }.bind(this);
+
+        this.xhr = xhr;
+        this.cell.addClassName('uploading');
+        this.showStatus('0 %');
+        xhr.send(data);
+    },
+
+    handleResponse: function (xhr)
+    {
+        this.finish(xhr);
+
+        var response = null;
+        if (xhr.status == 200 && xhr.responseText.isJSON()) {
+            response = xhr.responseText.evalJSON();
+        }
+
+        if (response && response.ajaxExpired && response.ajaxRedirect) {
+            setLocation(response.ajaxRedirect);
+            return;
+        }
+        if (!response || !response.file) {
+            this.showError(response && response.error ? response.error : this.config.messages.failed);
+            return;
+        }
+
+        this.setFile(response);
+    },
+
+    finish: function (xhr)
+    {
+        if (this.xhr === xhr) {
+            this.xhr = null;
+            this.cell.removeClassName('uploading');
+        }
+    },
+
+    setFile: function (file)
+    {
+        this.saveInput.value = Object.toJSON(file ? [{file: file.file, url: file.url}] : []);
+
+        this.preview.update('');
+        if (file) {
+            this.preview.insert(new Element('img', {src: file.url, alt: ''}));
+        }
+
+        this.cell[file ? 'addClassName' : 'removeClassName']('has-image');
+        this.showStatus('');
+    },
+
+    showStatus: function (text)
+    {
+        this.status.removeClassName('error');
+        this.status.update(text);
+    },
+
+    showError: function (text)
+    {
+        this.status.addClassName('error');
+        this.status.update(String(text).escapeHTML());
     }
-}
+};

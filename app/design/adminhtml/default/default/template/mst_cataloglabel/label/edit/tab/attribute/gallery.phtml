@@ -15,7 +15,7 @@
             </thead>
             <tfoot>
                 <tr>
-                    <td colspan="<?php echo count($this->getImageType()) * 3 + 2 ?>" class="a-right"><?php echo $this->getAddButtonHtml()?>&nbsp;<?php echo $this->getUploadButtonHtml() ?></td>
+                    <td colspan="<?php echo count($this->getImageType()) * 3 + 2 ?>" class="a-right"><?php echo $this->getAddButtonHtml()?></td>
                 </tr>
             </tfoot>
             <tbody id="link_items_body">
@@ -26,8 +26,7 @@
 </div>
 <script type="text/javascript">
 //<![CDATA[
-var maxUploadFileSizeInBytes = 134217728;
-var maxUploadFileSize = '128M';
+var uploaderConfig = <?php echo $this->getConfigJson() ?>;
 
 var linkTemplate = '<tr>' +
     '<td>' +
@@ -36,22 +35,16 @@ var linkTemplate = '<tr>' +
         '<input type="text" class="__option_text__ input-text" name="attribute[{{id}}][option_text]" value="{{option_text}}" />' +
     '</td>';
     <?php foreach ($this->getImageType() as $_type => $_title): ?>
-    linkTemplate += '<td id="gallery_cell_{{id}}_<?php echo $_type ?>">' +
-        '<div class="cataloglabel-gallery-edit-placeholder" onclick="linkItems.edit(this, \'{{id}}_<?php echo $_type ?>\');">edit</div>' +
-        '<div class="files">' +
-            '<div class="row">' +
-                '<input type="hidden" class="__delete__" name="attribute[{{id}}][display][<?php echo $_type ?>_is_delete]" value="" />' +
-                '<input type="hidden" id="attribute_{{id}}_<?php echo $_type ?>_file_save" name="attribute[{{id}}][display][<?php echo $_type ?>_file]" value="{{file_save}}" />' +
-                '<div id="attribute_{{id}}_<?php echo $_type ?>_file">' +
-                    '<div id="attribute_{{id}}_<?php echo $_type ?>_file-old" class="file-row-info"></div>' +
-                    '<div id="attribute_{{id}}_<?php echo $_type ?>_file-new" class="file-row-info"></div>' +
-                    '<div class="clear"></div>' +
-                '</div>'+
-            '</div>'+
-            '<div>'+
-                '<span id="attribute_{{id}}_<?php echo $_type ?>_sample_container"></span>'+
-            '</div>'+
-        '</div>'+
+    linkTemplate += '<td id="gallery_cell_{{id}}_<?php echo $_type ?>" class="cataloglabel-gallery-cell">' +
+        '<input type="hidden" class="__delete__" name="attribute[{{id}}][display][<?php echo $_type ?>_is_delete]" value="" />' +
+        '<input type="hidden" id="attribute_{{id}}_<?php echo $_type ?>_file_save" name="attribute[{{id}}][display][<?php echo $_type ?>_file]" value="" />' +
+        '<input type="file" id="attribute_{{id}}_<?php echo $_type ?>_file_input" class="cataloglabel-gallery-input" accept="<?php echo $this->getAcceptAttribute() ?>" />' +
+        '<div class="cataloglabel-gallery-actions">' +
+            '<button type="button" class="cataloglabel-gallery-upload"><?php echo $this->jsQuoteEscape($this->escapeHtml(Mage::helper('cataloglabel')->__('Upload'))) ?></button>' +
+            '<button type="button" class="cataloglabel-gallery-remove" title="<?php echo $this->jsQuoteEscape($this->escapeHtml(Mage::helper('cataloglabel')->__('Remove Image'))) ?>">&times;</button>' +
+        '</div>' +
+        '<div id="attribute_{{id}}_<?php echo $_type ?>_file_preview" class="cataloglabel-gallery-preview" data-empty="<?php echo $this->jsQuoteEscape($this->escapeHtml(Mage::helper('cataloglabel')->__('Drop image here'))) ?>"></div>' +
+        '<div id="attribute_{{id}}_<?php echo $_type ?>_file_status" class="cataloglabel-gallery-status"></div>' +
     '</td>'+
     '<td>' +
         '<input type="text" class="input-text" name="attribute[{{id}}][display][<?php echo $_type ?>_title]" value="{{<?php echo $_type ?>_title}}">' +
@@ -71,7 +64,6 @@ var linkItems = {
     templateSyntax : /(^|.|\r|\n)({{(\w+)}})/,
     templateText   : linkTemplate,
     itemCount      : 1,
-    uploader : {},
 
     add : function(data)
     {
@@ -94,19 +86,13 @@ var linkItems = {
         }
 
         <?php foreach ($this->getImageType() as $_type => $_title): ?>
-        if (!data.<?php echo $_type ?>_file_save) {
-            data.<?php echo $_type ?>_file_save = {};
-        }
         var id = data.id + '_<?php echo $_type ?>';
-        var fileUploader = new CatalogLabel.Label.FileUploader(
+        new CatalogLabel.Label.FileUploader(
             'gallery_cell_' + id,
-            'attribute[' + id + ']',
-            [data.<?php echo $_type ?>_file_save],
             'attribute_' + id + '_file',
-            <?php echo $this->getConfigJson() ?>,
-            '<?php echo Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB) ?>'
+            data.<?php echo $_type ?>_file_save,
+            uploaderConfig
         );
-        this.uploader[id] = fileUploader;
         <?php endforeach ?>
 
         this.itemCount++;
@@ -119,9 +105,6 @@ var linkItems = {
         alertAlreadyDisplayed = false;
         if(element){
             element.down('input[type="hidden"].__delete__').value = '1';
-            Element.select(element, 'div.flex').each(function(elm){
-                elm.remove();
-            });
             element.addClassName('no-display');
             element.addClassName('ignore-validate');
             element.hide();
@@ -137,13 +120,6 @@ var linkItems = {
                 Event.observe(buttons[i], 'click', this.remove.bind(this));
             }
         }
-    },
-
-    edit: function(item, id)
-    {
-        var fileuploader = this.uploader[id];
-        fileuploader.initUploader();
-        item.hide();
     }
 }
 
